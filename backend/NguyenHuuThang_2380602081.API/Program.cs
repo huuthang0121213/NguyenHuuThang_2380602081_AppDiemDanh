@@ -182,6 +182,17 @@ using (var scope = app.Services.CreateScope())
                 }
             }
         }
+        else if (studentUser.Email != "huuthang0121213@gmail.com")
+        {
+            studentUser.Email = "huuthang0121213@gmail.com";
+            await userManager.UpdateAsync(studentUser);
+            var st = context.Students.FirstOrDefault(s => s.StudentCode == "2380602081");
+            if (st != null)
+            {
+                st.Email = "huuthang0121213@gmail.com";
+                await context.SaveChangesAsync();
+            }
+        }
 
         // Tạo môn học mẫu nếu chưa có
         if (!context.Courses.Any())

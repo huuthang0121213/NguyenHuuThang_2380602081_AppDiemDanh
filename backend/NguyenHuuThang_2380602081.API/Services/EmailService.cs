@@ -22,7 +22,7 @@ namespace NguyenHuuThang_2380602081.API.Services
             var senderEmail = _configuration["Smtp:SenderEmail"] ?? "no-reply@attendance.edu.vn";
             var senderName = _configuration["Smtp:SenderName"] ?? "Hệ Thống Điểm Danh Sinh Viên";
             var username = _configuration["Smtp:Username"];
-            var password = _configuration["Smtp:Password"];
+            var password = _configuration["Smtp:Password"]?.Replace(" ", "").Trim();
 
             // Log nổi bật ra Console Terminal phục vụ kiểm thử và chấm bài
             Console.ForegroundColor = ConsoleColor.Cyan;
