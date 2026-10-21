@@ -74,6 +74,17 @@ class AuthService {
     }
   }
 
+  static dynamic _parseResponse(http.Response response) {
+    try {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      return {
+        'success': false,
+        'message': 'Phản hồi từ máy chủ (${response.statusCode}): ${utf8.decode(response.bodyBytes)}'
+      };
+    }
+  }
+
   // Đăng nhập (Bước 1: Kiểm tra tài khoản & gửi mã OTP)
   static Future<Map<String, dynamic>> login(String username, String password) async {
     try {
@@ -87,7 +98,7 @@ class AuthService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _parseResponse(response);
 
       if (response.statusCode == 200 && data['success'] == true) {
         // Nếu yêu cầu xác thực OTP 2 bước
@@ -132,7 +143,7 @@ class AuthService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _parseResponse(response);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final token = data['token'];
@@ -164,7 +175,7 @@ class AuthService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _parseResponse(response);
 
       if (response.statusCode == 200 && data['success'] == true) {
         return {
@@ -198,7 +209,7 @@ class AuthService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _parseResponse(response);
 
       if (response.statusCode == 200 && data['success'] == true) {
         return {
@@ -241,7 +252,7 @@ class AuthService {
         }),
       ).timeout(const Duration(seconds: 10));
 
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = _parseResponse(response);
 
       if (response.statusCode == 200 && data['success'] == true) {
         return {'success': true, 'data': data};

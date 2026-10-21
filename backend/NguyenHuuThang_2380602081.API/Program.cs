@@ -115,8 +115,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        // Tự động tạo DB nếu chưa có
-        context.Database.EnsureCreated();
+        // Tự động áp dụng Migration và cập nhật bảng CSDL nếu chưa có
+        context.Database.Migrate();
 
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
