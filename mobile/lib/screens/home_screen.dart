@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../widgets/pin_code_field.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -524,23 +525,13 @@ class _CheckInModalState extends State<_CheckInModal> {
 
             // BƯỚC 1: NHẬP MÃ GỒM 6 SỐ
             const Text(
-              '1. Nhập mã điểm danh (6 chữ số):',
+              '1. Nhập mã điểm danh gồm 6 số (từ QR hoặc bảng):',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E3A8A)),
             ),
-            const SizedBox(height: 6),
-            TextField(
+            const SizedBox(height: 10),
+            PinCodeField(
               controller: _sessionCodeController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 8, color: Color(0xFF1E3A8A)),
-              decoration: InputDecoration(
-                counterText: '',
-                hintText: '849201',
-                filled: true,
-                fillColor: Colors.blue.shade50,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              length: 6,
             ),
             const SizedBox(height: 16),
 
