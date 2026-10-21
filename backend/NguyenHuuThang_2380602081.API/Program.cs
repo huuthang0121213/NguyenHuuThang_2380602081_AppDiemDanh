@@ -137,7 +137,7 @@ using (var scope = app.Services.CreateScope())
             var admin = new ApplicationUser
             {
                 UserName = "admin",
-                Email = "admin@attendance.edu.vn",
+                Email = "huuthang0121213@gmail.com",
                 FullName = "Administrator",
                 CreatedAt = DateTime.UtcNow
             };
@@ -146,6 +146,11 @@ using (var scope = app.Services.CreateScope())
             {
                 await userManager.AddToRoleAsync(admin, "Admin");
             }
+        }
+        else if (adminUser.Email != "huuthang0121213@gmail.com")
+        {
+            adminUser.Email = "huuthang0121213@gmail.com";
+            await userManager.UpdateAsync(adminUser);
         }
 
         // Tạo tài khoản sinh viên mẫu Nguyễn Hữu Thắng

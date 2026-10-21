@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:qr_flutter/qr_flutter.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import 'student_list_screen.dart';
 import 'login_screen.dart';
+import 'attendance_qr_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -127,6 +126,24 @@ class _AdminScreenState extends State<AdminScreen> {
 
               Navigator.pop(ctx);
 
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Đang khởi tạo phiên điểm danh...'),
+                    ],
+                  ),
+                  duration: Duration(seconds: 1),
+                  backgroundColor: Color(0xFF1E3A8A),
+                ),
+              );
+
               try {
                 final token = await AuthService.getToken();
                 final response = await http.post(
@@ -149,12 +166,17 @@ class _AdminScreenState extends State<AdminScreen> {
                 if (!mounted) return;
                 final data = jsonDecode(utf8.decode(response.bodyBytes));
                 if (response.statusCode == 200 && data['success'] == true) {
-                  // Mở màn hình hiển thị Mã QR và Mã Code 6 số to rõ ràng
-                  _showQrCodeDialog(
-                    title: title,
-                    code: code,
-                    duration: duration,
-                    radius: radius,
+                  // Chuyển thẳng sang màn hình chiếu QR chuyên dụng toàn màn hình
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AttendanceQrScreen(
+                        title: title,
+                        sessionCode: code,
+                        durationMinutes: duration,
+                        allowedRadiusMeters: radius,
+                      ),
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -169,129 +191,6 @@ class _AdminScreenState extends State<AdminScreen> {
               }
             },
             child: const Text('Tạo phiên & Hiển thị QR'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==============================================================================
-  // HỘP THOẠI HIỂN THỊ MÃ QR VÀ MÃ CODE 6 SỐ CHO SINH VIÊN QUÉT / NHẬP
-  // ==============================================================================
-  void _showQrCodeDialog({
-    required String title,
-    required String code,
-    required int duration,
-    required int radius,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Center(
-          child: Column(
-            children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Hiệu lực: $duration phút · Phạm vi GPS: $radius m',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Mã QR được tạo bằng thư viện qr_flutter
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: QrImageView(
-                  data: code,
-                  version: QrVersions.auto,
-                  size: 210.0,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              const Text(
-                'Nếu sinh viên không quét được mã QR, hãy nhập mã gồm 6 số sau:',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.blueGrey),
-              ),
-              const SizedBox(height: 8),
-
-              // Hiển thị Mã 6 số to rõ ràng
-              InkWell(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: code));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã sao chép mã điểm danh!')),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF1E3A8A), width: 1.5),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.key, color: Color(0xFF1E3A8A), size: 22),
-                      const SizedBox(width: 10),
-                      Text(
-                        code,
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 6,
-                          color: Color(0xFF1E3A8A),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.copy, size: 18, color: Colors.grey),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '(Chạm vào mã số để sao chép)',
-                style: TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3A8A),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('ĐÓNG PHIÊN ĐIỂM DANH'),
-            ),
           ),
         ],
       ),
