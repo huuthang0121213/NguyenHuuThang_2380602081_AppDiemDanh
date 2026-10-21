@@ -1,0 +1,79 @@
+# ==========================================
+# .gitignore for NguyenHuuThang_2380602081
+# ASP.NET Core Web API + Flutter Mobile App
+# ==========================================
+
+# ------------------------------------------
+# .NET & Visual Studio
+# ------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+appsettings.Production.json
+appsettings.*.local.json
+
+# ------------------------------------------
+# Flutter & Dart
+# ------------------------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+.pub-cache/
+.pub/
+
+# Android specific
+**/android/**/gradle/
+**/android/**/gradlew
+**/android/**/gradlew.bat
+**/android/**/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/.gradle/
+**/android/captures/
+**/android/app/release/
+**/android/app/debug/
+
+# iOS specific
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/Flutter/Flutter.framework
+**/ios/**/Flutter/Flutter.podspec
+**/ios/**/GeneratedPluginRegistrant.h
+**/ios/**/GeneratedPluginRegistrant.m
+
+# ------------------------------------------
+# Environment & Secrets (Không push mã bí mật lên Git)
+# ------------------------------------------
+*.env
+!.env.example
+secrets.json
+
+# ------------------------------------------
+# IDE & Editors
+# ------------------------------------------
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*~
+
+# ------------------------------------------
+# OS Generated files
+# ------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store

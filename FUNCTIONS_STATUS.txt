@@ -1,0 +1,102 @@
+================================================================================
+DỰ ÁN: HỆ THỐNG ĐIỂM DANH SINH VIÊN (STUDENT ATTENDANCE SYSTEM)
+Họ và tên: Nguyễn Hữu Thắng
+MSSV: 2380602081
+Thư mục: NguyenHuuThang_2380602081
+================================================================================
+
+I. CẤU HÌNH ĐỊA CHỈ API (API CONFIGURATION)
+--------------------------------------------------------------------------------
+1. Swagger UI:
+   - HTTPS: https://localhost:7001/swagger
+   - HTTP:  http://localhost:5000/swagger
+
+2. API Base URL theo môi trường chạy Flutter:
+   - Trên trình duyệt / Windows desktop:    http://localhost:5000/api
+   - Trên Android Emulator (Máy ảo):        http://10.0.2.2:5000/api
+   - Trên điện thoại thật (cùng mạng Wi-Fi): http://<IP_LAN_CUA_MAY_TINH>:5000/api (Ví dụ: http://192.168.1.15:5000/api)
+
+--------------------------------------------------------------------------------
+II. DANH SÁCH CHỨC NĂNG VÀ TRẠNG THÁI HOÀN THÀNH
+Quy ước trạng thái: [ ] Chưa làm  |  [-] Đang làm  |  [x] Hoàn thành
+--------------------------------------------------------------------------------
+
+A. HỆ THỐNG & CƠ SỞ DỮ LIỆU
+[x] 1. Khởi tạo cấu trúc thư mục (backend, mobile, docs, .gitignore)
+[x] 2. Khởi tạo Git repository và cấu hình ignore
+[x] 3. Cấu hình CSDL SQL Server (Database: NguyenHuuThang_2380602081_DB)
+[x] 4. Cấu hình Identity & JWT Authentication cho Backend
+[x] 5. Chạy Migration và cập nhật database (dotnet ef database update thành công)
+
+B. XÁC THỰC VÀ PHÂN QUYỀN (AUTHENTICATION & ROLES)
+[x] 1. API Đăng ký tài khoản (POST /api/auth/register)
+[x] 2. API Đăng nhập cấp JWT Token (POST /api/auth/login)
+[x] 3. API Xem thông tin tài khoản (GET /api/auth/profile)
+[x] 4. Phân quyền người dùng (Roles: Admin, Teacher, Student)
+[x] 5. Giao diện Đăng nhập trên Flutter Mobile (LoginScreen)
+[x] 6. Giao diện Đăng ký trên Flutter Mobile (RegisterScreen)
+[x] 7. Giải mã JWT (jwt_decoder) để đọc Role, UserId, hạn dùng token
+[x] 8. Tự động đăng nhập lại bằng Token đã lưu trong SharedPreferences
+[x] 9. Đăng xuất (xóa token khỏi SharedPreferences)
+[x] 10. Điều hướng đúng màn hình theo Role (Admin/Teacher -> AdminScreen, Student -> HomeScreen)
+
+C. QUẢN LÝ SINH VIÊN (STUDENT CRUD)
+[x] 1. API Lấy danh sách tất cả sinh viên (GET /api/students)
+[x] 2. API Lấy thông tin chi tiết 1 sinh viên (GET /api/students/{id})
+[x] 3. API Thêm sinh viên mới (POST /api/students)
+[x] 4. API Cập nhật sinh viên (PUT /api/students/{id})
+[x] 5. API Xóa sinh viên (DELETE /api/students/{id})
+[x] 6. Giao diện danh sách sinh viên trên Flutter (ListView, tìm kiếm)
+[x] 7. Giao diện thêm / xóa thông tin sinh viên trên Flutter (StudentListScreen)
+
+D. QUẢN LÝ LỚP HỌC & MÔN HỌC (COURSES & CLASSES)
+[x] 1. Entity & Bảng Courses trong CSDL
+[ ] 2. Màn hình quản lý môn học mở rộng
+
+E. ĐIỂM DANH (ATTENDANCE)
+[x] 1. API Tạo phiên điểm danh buổi học (POST /api/attendance/session)
+[x] 2. API Sinh viên điểm danh bằng mã phiên / QR (POST /api/attendance/check-in)
+[x] 3. API Thống kê lịch sử điểm danh của sinh viên (GET /api/attendance/history)
+[x] 4. Giao diện tạo phiên điểm danh phía Admin (AdminScreen)
+[x] 5. Giao diện quét mã / nhập mã điểm danh phía Sinh viên (HomeScreen)
+[ ] 6. Tích hợp quét Camera QR Code trực tiếp (mobile_scanner)
+[ ] 7. Tích hợp xác thực GPS theo tọa độ phòng học
+[ ] 8. Tích hợp nhận diện khuôn mặt điểm danh
+
+--------------------------------------------------------------------------------
+III. DANH SÁCH API ĐÃ THIẾT KẾ & TRIỂN KHAI
+--------------------------------------------------------------------------------
+STT | Method | Endpoint                  | Quyền hạn      | Mô tả                          | Trạng thái
+----+--------+---------------------------+----------------+--------------------------------+------------
+1   | POST   | /api/auth/register        | Public         | Đăng ký tài khoản mới          | Hoàn thành
+2   | POST   | /api/auth/login           | Public         | Đăng nhập và lấy JWT Token     | Hoàn thành
+3   | GET    | /api/auth/profile         | Đăng nhập      | Xem thông tin cá nhân          | Hoàn thành
+4   | GET    | /api/students             | Public/Đăng nhập| Lấy danh sách sinh viên       | Hoàn thành
+5   | GET    | /api/students/{id}        | Đăng nhập      | Lấy chi tiết sinh viên         | Hoàn thành
+6   | POST   | /api/students             | Admin          | Thêm mới sinh viên             | Hoàn thành
+7   | PUT    | /api/students/{id}        | Admin          | Cập nhật sinh viên             | Hoàn thành
+8   | DELETE | /api/students/{id}        | Admin          | Xóa sinh viên                  | Hoàn thành
+9   | POST   | /api/attendance/session   | Giảng viên/Ad  | Tạo phiên điểm danh mới (QR)   | Hoàn thành
+10  | POST   | /api/attendance/check-in  | Sinh viên      | Sinh viên điểm danh (QR/GPS)   | Hoàn thành
+11  | GET    | /api/attendance/history   | Sinh viên      | Xem lịch sử điểm danh bản thân | Hoàn thành
+
+--------------------------------------------------------------------------------
+IV. NHẬT KÝ CÔNG VIỆC (WORK LOG)
+--------------------------------------------------------------------------------
+- 21/10/2026:
+  + Khởi tạo Git repository trên nhánh main.
+  + Thiết lập file cấu hình .gitignore loại bỏ file tạm cho .NET, Visual Studio và Flutter.
+  + Tạo cấu trúc thư mục hoàn chỉnh: backend/, mobile/, docs/.
+  + Xây dựng tài liệu: README.md, FUNCTIONS_STATUS.txt, API_DESIGN.md, DATABASE_SCHEMA.md, SETUP_GUIDE.md.
+  + Tạo ASP.NET Core Web API (.NET 8):
+    * Cài đặt EF Core, SQL Server, Identity, JWT Bearer, Swagger Bearer Auth.
+    * Tạo các model: ApplicationUser, Student, Course, AttendanceSession, AttendanceRecord.
+    * Tạo DbContext, cấu hình quan hệ bảng, cấu hình CORS AllowAll.
+    * Tạo Controllers: AuthController, StudentsController, AttendanceController.
+    * Tạo migration InitialCreate và cập nhật CSDL NguyenHuuThang_2380602081_DB thành công.
+  + Tạo Mobile App Flutter:
+    * Cài đặt các package: flutter_dotenv, jwt_decoder, shared_preferences, http.
+    * Cấu hình Internet permission và android:usesCleartextTraffic trong AndroidManifest.xml.
+    * Xây dựng tầng services: AuthService, StudentService.
+    * Xây dựng giao diện: LoginScreen, RegisterScreen, HomeScreen (Sinh viên), AdminScreen (Quản trị), StudentListScreen (CRUD Sinh viên).
+    * Tự động đăng nhập và phân quyền điều hướng người dùng theo Token.

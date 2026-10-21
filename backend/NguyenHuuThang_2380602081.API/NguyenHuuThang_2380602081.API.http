@@ -1,0 +1,6 @@
+@NguyenHuuThang_2380602081.API_HostAddress = http://localhost:5170
+
+GET {{NguyenHuuThang_2380602081.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
