@@ -4,39 +4,43 @@ namespace NguyenHuuThang_2380602081.API.DTOs
 {
     public class CreateSessionDto
     {
-        [Required]
-        public int CourseId { get; set; }
+        public int CourseId { get; set; } = 1;
 
         [Required]
         [MaxLength(200)]
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; } = "Buổi học Lập trình di động";
 
-        [Required]
-        [MaxLength(100)]
-        public string SessionCode { get; set; } = string.Empty;
+        // Mã phiên 6 số (nếu để trống hệ thống sẽ tự sinh ngẫu nhiên)
+        public string? SessionCode { get; set; }
 
         public int DurationMinutes { get; set; } = 30;
 
-        public double? Latitude { get; set; }
+        // Tọa độ GPS phòng học (mặc định tại trường ĐH)
+        public double? Latitude { get; set; } = 10.8231;
 
-        public double? Longitude { get; set; }
+        public double? Longitude { get; set; } = 106.6297;
 
-        public int AllowedRadiusMeters { get; set; } = 50;
+        // Bán kính cho phép điểm danh (mét)
+        public int AllowedRadiusMeters { get; set; } = 200;
     }
 
     public class CheckInDto
     {
-        [Required]
-        public int SessionId { get; set; }
+        // Có thể truyền SessionId hoặc không cần truyền nếu đã có SessionCode 6 số
+        public int? SessionId { get; set; }
 
         [Required]
         public string SessionCode { get; set; } = string.Empty;
 
+        // Tọa độ GPS của sinh viên khi bấm điểm danh
         public double? Latitude { get; set; }
 
         public double? Longitude { get; set; }
 
-        public string Method { get; set; } = "QRCode"; // QRCode, GPS, Manual
+        // Ảnh chụp khuôn mặt của sinh viên (chuỗi Base64)
+        public string? FacePhotoBase64 { get; set; }
+
+        public string Method { get; set; } = "QRCode"; // QRCode, 6DigitCode, GPS, Face
     }
 
     public class AttendanceRecordDto
@@ -51,6 +55,10 @@ namespace NguyenHuuThang_2380602081.API.DTOs
         public DateTime CheckInTime { get; set; }
         public string Status { get; set; } = string.Empty;
         public string CheckInMethod { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string? FacePhotoBase64 { get; set; }
+        public bool IsFaceVerified { get; set; }
         public string? Note { get; set; }
     }
 }

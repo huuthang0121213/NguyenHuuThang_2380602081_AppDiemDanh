@@ -6,12 +6,16 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NguyenHuuThang_2380602081.API.Data;
 using NguyenHuuThang_2380602081.API.Models;
+using NguyenHuuThang_2380602081.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Add Controllers & Endpoints
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Register Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // 2. Configure Swagger with JWT Bearer Support
 builder.Services.AddSwaggerGen(c =>

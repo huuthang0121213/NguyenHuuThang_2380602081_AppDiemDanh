@@ -74,7 +74,7 @@ class AuthService {
     }
   }
 
-  // Đăng nhập
+  // Đăng nhập (Bước 1: Kiểm tra tài khoản & gửi mã OTP)
   static Future<Map<String, dynamic>> login(String username, String password) async {
     try {
       final url = Uri.parse(ApiConfig.login);
@@ -84,6 +84,51 @@ class AuthService {
         body: jsonEncode({
           'username': username.trim(),
           'password': password,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Nếu yêu cầu xác thực OTP 2 bước
+        if (data['requiresOtp'] == true) {
+          return {
+            'success': true,
+            'requiresOtp': true,
+            'email': data['email'],
+            'devOtp': data['devOtp'],
+            'message': data['message'],
+          };
+        }
+
+        // Nếu trực tiếp có token (fallback)
+        final token = data['token'];
+        if (token != null) {
+          await saveToken(token);
+        }
+        if (data['user'] != null) {
+          final user = UserModel.fromJson(data['user']);
+          await saveUser(user);
+        }
+        return {'success': true, 'requiresOtp': false, 'data': data};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Đăng nhập thất bại!'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Không thể kết nối đến máy chủ: $e'};
+    }
+  }
+
+  // Xác thực mã OTP (Bước 2: Kiểm tra OTP & nhận JWT Token)
+  static Future<Map<String, dynamic>> verifyOtp(String username, String otpCode) async {
+    try {
+      final url = Uri.parse(ApiConfig.verifyOtp);
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username.trim(),
+          'otpCode': otpCode.trim(),
         }),
       ).timeout(const Duration(seconds: 10));
 
@@ -100,14 +145,77 @@ class AuthService {
         }
         return {'success': true, 'data': data};
       } else {
-        return {'success': false, 'message': data['message'] ?? 'Đăng nhập thất bại!'};
+        return {'success': false, 'message': data['message'] ?? 'Xác thực OTP thất bại!'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Không thể kết nối đến máy chủ: $e'};
     }
   }
 
-  // Đăng ký
+  // Gửi lại mã OTP
+  static Future<Map<String, dynamic>> resendOtp(String username) async {
+    try {
+      final url = Uri.parse(ApiConfig.resendOtp);
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username.trim(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'message': data['message'],
+          'devOtp': data['devOtp'],
+        };
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Gửi lại mã OTP thất bại!'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Không thể kết nối đến máy chủ: $e'};
+    }
+  }
+
+  // Gửi mã OTP xác nhận đăng ký về email
+  static Future<Map<String, dynamic>> sendRegisterOtp({
+    required String username,
+    required String email,
+    required String fullName,
+  }) async {
+    try {
+      final url = Uri.parse(ApiConfig.sendRegisterOtp);
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username.trim(),
+          'email': email.trim(),
+          'fullName': fullName.trim(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'message': data['message'],
+          'email': data['email'],
+          'devOtp': data['devOtp'],
+        };
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Không thể gửi mã OTP!'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Không thể kết nối đến máy chủ: $e'};
+    }
+  }
+
+  // Đăng ký (Kèm mã OTP xác thực)
   static Future<Map<String, dynamic>> register({
     required String username,
     required String email,
@@ -115,6 +223,7 @@ class AuthService {
     required String fullName,
     String? studentCode,
     String role = 'Student',
+    String? otpCode,
   }) async {
     try {
       final url = Uri.parse(ApiConfig.register);
@@ -128,6 +237,7 @@ class AuthService {
           'fullName': fullName.trim(),
           'studentCode': studentCode?.trim(),
           'role': role,
+          'otpCode': otpCode?.trim(),
         }),
       ).timeout(const Duration(seconds: 10));
 

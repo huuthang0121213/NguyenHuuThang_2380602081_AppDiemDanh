@@ -9,6 +9,9 @@ class ApiConfig {
   // Auth endpoints
   static String get login => '$baseUrl/auth/login';
   static String get register => '$baseUrl/auth/register';
+  static String get sendRegisterOtp => '$baseUrl/auth/send-register-otp';
+  static String get verifyOtp => '$baseUrl/auth/verify-otp';
+  static String get resendOtp => '$baseUrl/auth/resend-otp';
   static String get profile => '$baseUrl/auth/profile';
 
   // Students endpoints

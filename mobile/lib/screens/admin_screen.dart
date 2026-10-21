@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:qr_flutter/qr_flutter.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -40,34 +43,72 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _showCreateSessionDialog() async {
+    // Tự động sinh mã điểm danh gồm 6 số ngẫu nhiên
+    final randomCode = (Random().nextInt(900000) + 100000).toString();
     final titleController = TextEditingController(text: 'Buổi học Lập trình di động');
-    final sessionCodeController = TextEditingController(text: 'SES-${DateTime.now().millisecondsSinceEpoch % 100000}');
+    final sessionCodeController = TextEditingController(text: randomCode);
     final durationController = TextEditingController(text: '30');
+    final radiusController = TextEditingController(text: '200');
 
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Tạo phiên điểm danh'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        title: const Row(
           children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Tên buổi học *', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: sessionCodeController,
-              decoration: const InputDecoration(labelText: 'Mã phiên (Session Code) *', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: durationController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Thời lượng (phút) *', border: OutlineInputBorder()),
-            ),
+            Icon(Icons.add_circle_outline, color: Color(0xFF1E3A8A)),
+            SizedBox(width: 8),
+            Text('Tạo phiên điểm danh'),
           ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Tên buổi học *', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: sessionCodeController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                decoration: InputDecoration(
+                  labelText: 'Mã phiên (6 số) *',
+                  border: const OutlineInputBorder(),
+                  helperText: 'Mã số để sinh viên nhập khi không quét được QR',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Đổi mã 6 số khác',
+                    onPressed: () {
+                      sessionCodeController.text = (Random().nextInt(900000) + 100000).toString();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: durationController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Thời gian (phút)', border: OutlineInputBorder()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: radiusController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Bán kính GPS (m)', border: OutlineInputBorder()),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
@@ -80,6 +121,7 @@ class _AdminScreenState extends State<AdminScreen> {
               final title = titleController.text.trim();
               final code = sessionCodeController.text.trim();
               final duration = int.tryParse(durationController.text.trim()) ?? 30;
+              final radius = int.tryParse(radiusController.text.trim()) ?? 200;
 
               if (title.isEmpty || code.isEmpty) return;
 
@@ -98,17 +140,21 @@ class _AdminScreenState extends State<AdminScreen> {
                     'title': title,
                     'sessionCode': code,
                     'durationMinutes': duration,
+                    'latitude': 10.8231,
+                    'longitude': 106.6297,
+                    'allowedRadiusMeters': radius,
                   }),
                 );
 
                 if (!mounted) return;
                 final data = jsonDecode(utf8.decode(response.bodyBytes));
                 if (response.statusCode == 200 && data['success'] == true) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Tạo phiên điểm danh thành công! SessionCode: $code'),
-                      backgroundColor: Colors.green,
-                    ),
+                  // Mở màn hình hiển thị Mã QR và Mã Code 6 số to rõ ràng
+                  _showQrCodeDialog(
+                    title: title,
+                    code: code,
+                    duration: duration,
+                    radius: radius,
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -122,7 +168,130 @@ class _AdminScreenState extends State<AdminScreen> {
                 );
               }
             },
-            child: const Text('Tạo phiên'),
+            child: const Text('Tạo phiên & Hiển thị QR'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================================
+  // HỘP THOẠI HIỂN THỊ MÃ QR VÀ MÃ CODE 6 SỐ CHO SINH VIÊN QUÉT / NHẬP
+  // ==============================================================================
+  void _showQrCodeDialog({
+    required String title,
+    required String code,
+    required int duration,
+    required int radius,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Center(
+          child: Column(
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Hiệu lực: $duration phút · Phạm vi GPS: $radius m',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Mã QR được tạo bằng thư viện qr_flutter
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: QrImageView(
+                  data: code,
+                  version: QrVersions.auto,
+                  size: 210.0,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              const Text(
+                'Nếu sinh viên không quét được mã QR, hãy nhập mã gồm 6 số sau:',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+              ),
+              const SizedBox(height: 8),
+
+              // Hiển thị Mã 6 số to rõ ràng
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã sao chép mã điểm danh!')),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF1E3A8A), width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.key, color: Color(0xFF1E3A8A), size: 22),
+                      const SizedBox(width: 10),
+                      Text(
+                        code,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 6,
+                          color: Color(0xFF1E3A8A),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.copy, size: 18, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '(Chạm vào mã số để sao chép)',
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ĐÓNG PHIÊN ĐIỂM DANH'),
+            ),
           ),
         ],
       ),
@@ -195,12 +364,29 @@ class _AdminScreenState extends State<AdminScreen> {
             const SizedBox(height: 20),
 
             const Text(
-              'Chức năng quản trị',
+              'Chức năng quản trị & Điểm danh',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
-            // Card 1: Quản lý sinh viên
+            // Card 1: Tạo phiên điểm danh mới (Có QR Code & Mã 6 số)
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF10B981),
+                  child: Icon(Icons.qr_code_2, color: Colors.white),
+                ),
+                title: const Text('Mở Phiên Điểm Danh (QR & 6 Số)', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text('Tạo mã QR chiếu lên bảng và mã 6 số cho sinh viên'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: _showCreateSessionDialog,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Card 2: Quản lý sinh viên
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -218,23 +404,6 @@ class _AdminScreenState extends State<AdminScreen> {
                     MaterialPageRoute(builder: (_) => const StudentListScreen()),
                   );
                 },
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Card 2: Tạo phiên điểm danh mới
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFF10B981),
-                  child: Icon(Icons.qr_code_2, color: Colors.white),
-                ),
-                title: const Text('Tạo Phiên Điểm Danh', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Mở phiên điểm danh để sinh viên quét mã'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: _showCreateSessionDialog,
               ),
             ),
             const SizedBox(height: 12),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
@@ -38,7 +39,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (username.isEmpty || password.isEmpty || fullName.isEmpty || email.isEmpty) {
       setState(() {
-        _errorMessage = 'Vui lòng điền các thông tin bắt buộc!';
+        _errorMessage = 'Vui lòng điền đầy đủ các thông tin bắt buộc (*)!';
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() {
+        _errorMessage = 'Mật khẩu phải chứa ít nhất 6 ký tự!';
       });
       return;
     }
@@ -48,13 +56,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _errorMessage = null;
     });
 
-    final result = await AuthService.register(
+    // Bước 1: Gửi mã OTP xác nhận về Email đăng ký
+    final otpRes = await AuthService.sendRegisterOtp(
       username: username,
       email: email,
-      password: password,
       fullName: fullName,
-      studentCode: studentCode.isNotEmpty ? studentCode : null,
-      role: _selectedRole,
     );
 
     if (!mounted) return;
@@ -63,17 +69,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = false;
     });
 
-    if (result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đăng ký thành công! Vui lòng đăng nhập.'),
-          backgroundColor: Colors.green,
+    if (otpRes['success'] == true) {
+      // Bước 2: Hiển thị hộp thoại nhập OTP xác thực email trước khi tạo tài khoản
+      final verified = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => _RegisterOtpDialog(
+          username: username,
+          email: email,
+          fullName: fullName,
+          password: password,
+          studentCode: studentCode.isNotEmpty ? studentCode : null,
+          role: _selectedRole,
+          devOtp: otpRes['devOtp'],
         ),
       );
-      Navigator.pop(context);
+
+      if (verified == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đăng ký tài khoản thành công! Vui lòng đăng nhập.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } else {
       setState(() {
-        _errorMessage = result['message'] ?? 'Đăng ký thất bại!';
+        _errorMessage = otpRes['message'] ?? 'Không thể gửi mã OTP xác nhận đăng ký!';
       });
     }
   }
@@ -82,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đăng ký tài khoản'),
+        title: const Text('Đăng ký tài khoản mới'),
         backgroundColor: const Color(0xFF1E3A8A),
         foregroundColor: Colors.white,
       ),
@@ -137,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: 'Email *',
+                labelText: 'Email nhận mã OTP *',
                 prefixIcon: const Icon(Icons.email_outlined),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -184,12 +207,246 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('ĐĂNG KÝ NGAY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    : const Text('XÁC NHẬN & NHẬN MÃ OTP', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ==============================================================================
+// HỘP THOẠI NHẬP OTP XÁC NHẬN EMAIL ĐĂNG KÝ
+// ==============================================================================
+class _RegisterOtpDialog extends StatefulWidget {
+  final String username;
+  final String email;
+  final String fullName;
+  final String password;
+  final String? studentCode;
+  final String role;
+  final String? devOtp;
+
+  const _RegisterOtpDialog({
+    required this.username,
+    required this.email,
+    required this.fullName,
+    required this.password,
+    this.studentCode,
+    required this.role,
+    this.devOtp,
+  });
+
+  @override
+  State<_RegisterOtpDialog> createState() => _RegisterOtpDialogState();
+}
+
+class _RegisterOtpDialogState extends State<_RegisterOtpDialog> {
+  final _otpController = TextEditingController();
+  int _secondsRemaining = 300;
+  Timer? _timer;
+  bool _isSubmitting = false;
+  String? _dialogError;
+  String? _currentDevOtp;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentDevOtp = widget.devOtp;
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    setState(() => _secondsRemaining = 300);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+      } else {
+        t.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  String _formatTimer(int s) {
+    final m = (s ~/ 60).toString().padLeft(2, '0');
+    final sec = (s % 60).toString().padLeft(2, '0');
+    return '$m:$sec';
+  }
+
+  Future<void> _handleConfirm() async {
+    final code = _otpController.text.trim();
+    if (code.length != 6) {
+      setState(() => _dialogError = 'Vui lòng nhập đủ 6 chữ số mã OTP!');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _dialogError = null;
+    });
+
+    final res = await AuthService.register(
+      username: widget.username,
+      email: widget.email,
+      password: widget.password,
+      fullName: widget.fullName,
+      studentCode: widget.studentCode,
+      role: widget.role,
+      otpCode: code,
+    );
+
+    if (!mounted) return;
+
+    setState(() => _isSubmitting = false);
+
+    if (res['success'] == true) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => _dialogError = res['message'] ?? 'Xác nhận OTP thất bại!');
+    }
+  }
+
+  Future<void> _handleResend() async {
+    final res = await AuthService.sendRegisterOtp(
+      username: widget.username,
+      email: widget.email,
+      fullName: widget.fullName,
+    );
+    if (res['success'] == true && mounted) {
+      setState(() {
+        _currentDevOtp = res['devOtp'];
+      });
+      _startTimer();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mã OTP mới đã được gửi!'), backgroundColor: Colors.green),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.blue.shade50, shape: BoxShape.circle),
+            child: const Icon(Icons.mark_email_read_outlined, color: Color(0xFF1E3A8A)),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text('Xác thực OTP Email', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Hệ thống đã gửi mã OTP 6 số đến email đăng ký: ', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+            const SizedBox(height: 4),
+            Text(widget.email, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+            const SizedBox(height: 12),
+
+            if (_currentDevOtp != null)
+              InkWell(
+                onTap: () => _otpController.text = _currentDevOtp!,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.key, color: Colors.amber, size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'OTP thử nghiệm: $_currentDevOtp (chạm điền)',
+                          style: TextStyle(fontSize: 12, color: Colors.brown.shade800, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (_dialogError != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(_dialogError!, style: TextStyle(color: Colors.red.shade800, fontSize: 12)),
+              ),
+
+            TextField(
+              controller: _otpController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '------',
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.timer_outlined, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(_formatTimer(_secondsRemaining), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                TextButton(
+                  onPressed: _handleResend,
+                  child: const Text('Gửi lại mã', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Hủy')),
+        ElevatedButton(
+          onPressed: _isSubmitting ? null : _handleConfirm,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1E3A8A),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: _isSubmitting
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : const Text('XÁC NHẬN ĐĂNG KÝ'),
+        ),
+      ],
     );
   }
 }

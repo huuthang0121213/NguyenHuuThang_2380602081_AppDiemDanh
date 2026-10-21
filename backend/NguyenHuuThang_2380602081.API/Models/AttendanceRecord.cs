@@ -31,6 +31,10 @@ namespace NguyenHuuThang_2380602081.API.Models
 
         public double? Longitude { get; set; }
 
+        public string? FacePhotoBase64 { get; set; }
+
+        public bool IsFaceVerified { get; set; } = false;
+
         [MaxLength(500)]
         public string? Note { get; set; }
     }

@@ -28,17 +28,22 @@ A. HỆ THỐNG & CƠ SỞ DỮ LIỆU
 [x] 4. Cấu hình Identity & JWT Authentication cho Backend
 [x] 5. Chạy Migration và cập nhật database (dotnet ef database update thành công)
 
-B. XÁC THỰC VÀ PHÂN QUYỀN (AUTHENTICATION & ROLES)
-[x] 1. API Đăng ký tài khoản (POST /api/auth/register)
-[x] 2. API Đăng nhập cấp JWT Token (POST /api/auth/login)
-[x] 3. API Xem thông tin tài khoản (GET /api/auth/profile)
-[x] 4. Phân quyền người dùng (Roles: Admin, Teacher, Student)
-[x] 5. Giao diện Đăng nhập trên Flutter Mobile (LoginScreen)
-[x] 6. Giao diện Đăng ký trên Flutter Mobile (RegisterScreen)
-[x] 7. Giải mã JWT (jwt_decoder) để đọc Role, UserId, hạn dùng token
-[x] 8. Tự động đăng nhập lại bằng Token đã lưu trong SharedPreferences
-[x] 9. Đăng xuất (xóa token khỏi SharedPreferences)
-[x] 10. Điều hướng đúng màn hình theo Role (Admin/Teacher -> AdminScreen, Student -> HomeScreen)
+B. XÁC THỰC VÀ PHÂN QUYỀN (AUTHENTICATION & ROLES & OTP)
+[x] 1. API Đăng ký tài khoản qua email (POST /api/auth/register - mã hóa PBKDF2)
+[x] 2. API Đăng nhập bước 1 và phát mã OTP qua email (POST /api/auth/login)
+[x] 3. Tích hợp SMTP Email Service gửi mã OTP 6 số qua email thật & log console
+[x] 4. API Xác thực và kiểm tra mã OTP cấp JWT Token (POST /api/auth/verify-otp)
+       - Giới hạn thời gian hiệu lực 5 phút
+       - Giới hạn số lần nhập sai tối đa 5 lần
+[x] 5. API Gửi lại mã OTP qua email (POST /api/auth/resend-otp)
+[x] 6. API Xem thông tin tài khoản (GET /api/auth/profile)
+[x] 7. Phân quyền người dùng (Roles: Admin, Teacher, Student)
+[x] 8. Giao diện Đăng nhập & Hộp thoại xác thực OTP 2 bước trên Flutter Mobile (LoginScreen)
+[x] 9. Giao diện Đăng ký trên Flutter Mobile (RegisterScreen)
+[x] 10. Giải mã JWT (jwt_decoder) để đọc Role, UserId, hạn dùng token
+[x] 11. Tự động đăng nhập lại bằng Token đã lưu trong SharedPreferences
+[x] 12. Đăng xuất (xóa token khỏi SharedPreferences)
+[x] 13. Điều hướng đúng màn hình theo Role (Admin/Teacher -> AdminScreen, Student -> HomeScreen)
 
 C. QUẢN LÝ SINH VIÊN (STUDENT CRUD)
 [x] 1. API Lấy danh sách tất cả sinh viên (GET /api/students)
@@ -59,26 +64,28 @@ E. ĐIỂM DANH (ATTENDANCE)
 [x] 3. API Thống kê lịch sử điểm danh của sinh viên (GET /api/attendance/history)
 [x] 4. Giao diện tạo phiên điểm danh phía Admin (AdminScreen)
 [x] 5. Giao diện quét mã / nhập mã điểm danh phía Sinh viên (HomeScreen)
-[ ] 6. Tích hợp quét Camera QR Code trực tiếp (mobile_scanner)
-[ ] 7. Tích hợp xác thực GPS theo tọa độ phòng học
-[ ] 8. Tích hợp nhận diện khuôn mặt điểm danh
+[x] 6. Tích hợp thư viện QR Code (qr_flutter) hiển thị mã quét trực tiếp trên màn hình
+[x] 7. Tích hợp xác thực vị trí GPS bằng Geolocator và tính khoảng cách Haversine trên Server
+[x] 8. Tích hợp chụp ảnh selfie xác thực khuôn mặt sinh viên (Face Verification)
 
 --------------------------------------------------------------------------------
 III. DANH SÁCH API ĐÃ THIẾT KẾ & TRIỂN KHAI
 --------------------------------------------------------------------------------
 STT | Method | Endpoint                  | Quyền hạn      | Mô tả                          | Trạng thái
 ----+--------+---------------------------+----------------+--------------------------------+------------
-1   | POST   | /api/auth/register        | Public         | Đăng ký tài khoản mới          | Hoàn thành
-2   | POST   | /api/auth/login           | Public         | Đăng nhập và lấy JWT Token     | Hoàn thành
-3   | GET    | /api/auth/profile         | Đăng nhập      | Xem thông tin cá nhân          | Hoàn thành
-4   | GET    | /api/students             | Public/Đăng nhập| Lấy danh sách sinh viên       | Hoàn thành
-5   | GET    | /api/students/{id}        | Đăng nhập      | Lấy chi tiết sinh viên         | Hoàn thành
-6   | POST   | /api/students             | Admin          | Thêm mới sinh viên             | Hoàn thành
-7   | PUT    | /api/students/{id}        | Admin          | Cập nhật sinh viên             | Hoàn thành
-8   | DELETE | /api/students/{id}        | Admin          | Xóa sinh viên                  | Hoàn thành
-9   | POST   | /api/attendance/session   | Giảng viên/Ad  | Tạo phiên điểm danh mới (QR)   | Hoàn thành
-10  | POST   | /api/attendance/check-in  | Sinh viên      | Sinh viên điểm danh (QR/GPS)   | Hoàn thành
-11  | GET    | /api/attendance/history   | Sinh viên      | Xem lịch sử điểm danh bản thân | Hoàn thành
+1   | POST   | /api/auth/register        | Public         | Đăng ký tài khoản qua email    | Hoàn thành
+2   | POST   | /api/auth/login           | Public         | Đăng nhập và phát mã OTP email | Hoàn thành
+3   | POST   | /api/auth/verify-otp      | Public         | Xác thực OTP & cấp JWT Token   | Hoàn thành
+4   | POST   | /api/auth/resend-otp      | Public         | Gửi lại mã OTP qua email       | Hoàn thành
+5   | GET    | /api/auth/profile         | Đăng nhập      | Xem thông tin cá nhân          | Hoàn thành
+6   | GET    | /api/students             | Public/Đăng nhập| Lấy danh sách sinh viên       | Hoàn thành
+7   | GET    | /api/students/{id}        | Đăng nhập      | Lấy chi tiết sinh viên         | Hoàn thành
+8   | POST   | /api/students             | Admin          | Thêm mới sinh viên             | Hoàn thành
+9   | PUT    | /api/students/{id}        | Admin          | Cập nhật sinh viên             | Hoàn thành
+10  | DELETE | /api/students/{id}        | Admin          | Xóa sinh viên                  | Hoàn thành
+11  | POST   | /api/attendance/session   | Giảng viên/Ad  | Tạo phiên điểm danh mới (QR)   | Hoàn thành
+12  | POST   | /api/attendance/check-in  | Sinh viên      | Sinh viên điểm danh (QR/GPS)   | Hoàn thành
+13  | GET    | /api/attendance/history   | Sinh viên      | Xem lịch sử điểm danh bản thân | Hoàn thành
 
 --------------------------------------------------------------------------------
 IV. NHẬT KÝ CÔNG VIỆC (WORK LOG)
