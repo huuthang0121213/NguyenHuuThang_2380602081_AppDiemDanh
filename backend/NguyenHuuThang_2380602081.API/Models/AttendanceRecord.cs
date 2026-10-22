@@ -24,16 +24,33 @@ namespace NguyenHuuThang_2380602081.API.Models
         [MaxLength(50)]
         public string Status { get; set; } = "Present"; // Present, Late, Absent
 
-        [MaxLength(50)]
-        public string CheckInMethod { get; set; } = "QRCode"; // QRCode, Manual, GPS
+        [MaxLength(100)]
+        public string CheckInMethod { get; set; } = "QRCode+Face+GPS"; // QRCode, Manual, GPS
 
         public double? Latitude { get; set; }
 
         public double? Longitude { get; set; }
 
-        public string? FacePhotoBase64 { get; set; }
+        // ================================================================
+        // BẢO VỆ DỮ LIỆU: KHÔNG lưu ảnh gốc, chỉ lưu vector đặc trưng khuôn mặt
+        // Face Embedding là JSON array float[] 128 chiều (FaceNet-style)
+        // Dữ liệu không thể khôi phục lại ảnh gốc từ vector này
+        // ================================================================
+        public string? FaceEmbeddingJson { get; set; }
 
         public bool IsFaceVerified { get; set; } = false;
+
+        // ================================================================
+        // DEVICE BINDING: Ghi lại thiết bị đã điểm danh
+        // ================================================================
+        [MaxLength(256)]
+        public string? DeviceId { get; set; }
+
+        // ================================================================
+        // QR TOKEN: Lưu token đã dùng để chống replay attack
+        // ================================================================
+        [MaxLength(512)]
+        public string? QrTokenUsed { get; set; }
 
         [MaxLength(500)]
         public string? Note { get; set; }

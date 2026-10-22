@@ -53,7 +53,8 @@ namespace NguyenHuuThang_2380602081.API.Controllers
             if (existingUser != null)
                 return BadRequest(new AuthResponseDto { Success = false, Message = "Tên đăng nhập này đã được sử dụng!" });
 
-            var existingEmail = await _userManager.FindByEmailAsync(dto.Email);
+            var normalizedEmail = dto.Email.ToUpperInvariant();
+            var existingEmail = await _userManager.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
             if (existingEmail != null)
                 return BadRequest(new AuthResponseDto { Success = false, Message = "Email này đã được đăng ký cho tài khoản khác!" });
 
@@ -107,7 +108,8 @@ namespace NguyenHuuThang_2380602081.API.Controllers
             if (existingUser != null)
                 return BadRequest(new AuthResponseDto { Success = false, Message = "Tên đăng nhập đã tồn tại!" });
 
-            var existingEmail = await _userManager.FindByEmailAsync(dto.Email);
+            var normalizedEmail = dto.Email.ToUpperInvariant();
+            var existingEmail = await _userManager.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
             if (existingEmail != null)
                 return BadRequest(new AuthResponseDto { Success = false, Message = "Email này đã được đăng ký cho tài khoản khác!" });
 

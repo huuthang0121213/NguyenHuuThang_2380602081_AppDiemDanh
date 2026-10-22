@@ -22,4 +22,8 @@ class ApiConfig {
   static String get attendanceSession => '$baseUrl/attendance/session';
   static String get attendanceCheckIn => '$baseUrl/attendance/check-in';
   static String get attendanceHistory => '$baseUrl/attendance/history';
+
+  // Dynamic QR Token endpoint (Giảng viên chiếu màn hình - refresh mỗi 10 giây)
+  static String attendanceQrToken(int sessionId) => '$baseUrl/attendance/qr-token/$sessionId';
 }
+

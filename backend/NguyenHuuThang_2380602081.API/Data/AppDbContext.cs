@@ -16,6 +16,7 @@ namespace NguyenHuuThang_2380602081.API.Data
         public DbSet<AttendanceSession> AttendanceSessions { get; set; }
         public DbSet<AttendanceRecord> AttendanceRecords { get; set; }
         public DbSet<OtpVerification> OtpVerifications { get; set; }
+        public DbSet<QrToken> QrTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

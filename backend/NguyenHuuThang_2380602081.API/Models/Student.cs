@@ -34,6 +34,23 @@ namespace NguyenHuuThang_2380602081.API.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        // ================================================================
+        // DEVICE BINDING: Mỗi sinh viên chỉ được gắn với 1 Device ID duy nhất
+        // Ngăn chặn nhiều thiết bị dùng chung tài khoản để điểm danh hộ
+        // ================================================================
+        [MaxLength(256)]
+        public string? DeviceId { get; set; }
+
+        public DateTime? DeviceRegisteredAt { get; set; }
+
+        // ================================================================
+        // FACE EMBEDDING: Không lưu ảnh gốc, chỉ lưu chuỗi vector đặc trưng
+        // Định dạng: JSON array float[] độ dài 128 (FaceNet-style embedding)
+        // ================================================================
+        public string? FaceEmbeddingJson { get; set; }
+
+        public DateTime? FaceRegisteredAt { get; set; }
+
         // Navigation
         public ICollection<AttendanceRecord> AttendanceRecords { get; set; } = new List<AttendanceRecord>();
     }

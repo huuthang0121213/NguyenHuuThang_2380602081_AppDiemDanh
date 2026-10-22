@@ -240,13 +240,17 @@ namespace NguyenHuuThang_2380602081.API.Migrations
 
                     b.Property<string>("CheckInMethod")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CheckInTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FacePhotoBase64")
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FaceEmbeddingJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsFaceVerified")
@@ -261,6 +265,10 @@ namespace NguyenHuuThang_2380602081.API.Migrations
                     b.Property<string>("Note")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QrTokenUsed")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.Property<int>("SessionId")
                         .HasColumnType("int");
@@ -397,6 +405,46 @@ namespace NguyenHuuThang_2380602081.API.Migrations
                     b.ToTable("OtpVerifications");
                 });
 
+            modelBuilder.Entity("NguyenHuuThang_2380602081.API.Models.QrToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UsedByStudentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("QrTokens");
+                });
+
             modelBuilder.Entity("NguyenHuuThang_2380602081.API.Models.Student", b =>
                 {
                     b.Property<int>("Id")
@@ -413,10 +461,23 @@ namespace NguyenHuuThang_2380602081.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime?>("DeviceRegisteredAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FaceEmbeddingJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("FaceRegisteredAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("FullName")
                         .IsRequired()
